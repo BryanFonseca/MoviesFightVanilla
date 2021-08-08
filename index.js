@@ -17,6 +17,7 @@ let request = async (searchTerm) =>
   }
   return response.data.Search;
 }
+
 const root = document.querySelector('.autocomplete');
 root.innerHTML = `
 <label><b>Search for a movie</b></label>
@@ -28,8 +29,8 @@ root.innerHTML = `
 	</div>
       </div>
       <div id="target"></div>
-`
-;
+`;
+
 const input = document.querySelector('.input');
 const dropdown = document.querySelector('.dropdown');
 const resultsWrapper = document.querySelector('.results');
@@ -68,6 +69,7 @@ const onInput = async (event) =>
       })
     }
   }
+
 };
 
 //primero se ejecuta debounce y una vez la función retorna, el argumento del evento es pasado a la misma.
@@ -76,12 +78,14 @@ const onInput = async (event) =>
 //considerar que la linea de abajo solo se ejecuta de manera síncrona, el callback devuelto por debounce
 //se ejecuta de manera asíncrona al gatillarse el evento.
 input.addEventListener('input', debounce(onInput, 500));
-input.addEventListener('click', onInput)
+input.addEventListener('click', checkClicked(onInput));
 
 document.addEventListener('click', (event) => {
   if(!root.contains(event.target))
   {
     dropdown.classList.remove('is-active');
+    input.removeEventListener('click', checkClicked(onInput));
+    input.addEventListener('click', checkClicked(onInput));
   }
 }) 
 
