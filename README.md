@@ -2,7 +2,7 @@
 
 > #### This app makes use of:
 >
-> - API consumption using AXIOS. 
+> - API consumption using AXIOS 
 > - Icons from font-awesome
 > - Bulma Framework
 >

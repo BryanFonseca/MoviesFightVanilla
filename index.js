@@ -1,4 +1,5 @@
 //API key: fd6fe8b7
+/*
 let request = async (searchTerm) =>
 {
   let config = 
@@ -17,77 +18,48 @@ let request = async (searchTerm) =>
   }
   return response.data.Search;
 }
+*/
 
-const root = document.querySelector('.autocomplete');
-root.innerHTML = `
-<label><b>Search for a movie</b></label>
-<input class="input" type="text">
-<div class="dropdown">
-	<div class="dropdown-menu">
-	  <div class="dropdown-content results">
-	  </div>
-	</div>
-      </div>
-      <div id="target"></div>
-`;
-
-const input = document.querySelector('.input');
-const dropdown = document.querySelector('.dropdown');
-const resultsWrapper = document.querySelector('.results');
-
-const onInput = async (event) => 
-{
-  const movies = await request(event.target.value);
-
-  if(!movies.length)
+createAutoComplete({
+  searchingFor: 'movie',
+  root: document.querySelector('.autocomplete'),
+  RenderOption: (movie) => 
   {
-    dropdown.classList.remove('is-active');
-    return;
-  }
-
-  resultsWrapper.innerHTML = '';
-  dropdown.classList.add('is-active');
-  if(movies)
-  {
-    for(let movie of movies)
-    {
-      const option = document.createElement('a');
-
-      const imgSrc = movie.Poster === 'N/A' ? '' : movie.Poster;
-
-      option.classList.add('dropdown-item');
-      option.innerHTML = `
+    const imgSrc = movie.Poster === 'N/A' ? '' : movie.Poster;
+    return `
       <img src="${imgSrc}"/>
       ${movie.Title}
+      (${movie.Year})
       `;
-      resultsWrapper.appendChild(option);
-
-      option.addEventListener('click', () => {
-	dropdown.classList.remove('is-active');
-	input.value = movie.Title;
-	OnMovieSelect(movie);
-      })
-    }
-  }
-
-};
-
-//primero se ejecuta debounce y una vez la función retorna, el argumento del evento es pasado a la misma.
-//cuando se ejecuta debounce la función functionRoReturn no se ejecuta.
-//solo se devuelve y se usa como handler
-//considerar que la linea de abajo solo se ejecuta de manera síncrona, el callback devuelto por debounce
-//se ejecuta de manera asíncrona al gatillarse el evento.
-input.addEventListener('input', debounce(onInput, 500));
-input.addEventListener('click', checkClicked(onInput));
-
-document.addEventListener('click', (event) => {
-  if(!root.contains(event.target))
+  },
+  GetInputValue: (movie) =>
   {
-    dropdown.classList.remove('is-active');
-    input.removeEventListener('click', checkClicked(onInput));
-    input.addEventListener('click', checkClicked(onInput));
+    return movie.Title;
+  },
+  OnOptionSelect: (movie) => 
+  {
+    OnMovieSelect(movie);
+  },
+  Request: async (searchTerm) =>
+  {
+    let config = 
+      {
+	params: 
+	{
+	  apikey: 'fd6fe8b7',
+	  s: searchTerm 
+	}
+      };
+    //posiblemente añadir try-catch para eliminar el error en GET
+    let response = await axios.get('http://www.omdbapi.com/', config);
+    if(response.data.Error)
+    {
+      return [];
+    }
+    return response.data.Search;
+
   }
-}) 
+});
 
 const OnMovieSelect = async movie =>
 {
