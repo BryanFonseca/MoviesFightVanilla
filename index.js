@@ -20,9 +20,7 @@ let request = async (searchTerm) =>
 }
 */
 
-createAutoComplete({
-  searchingFor: 'movie',
-  root: document.querySelector('.autocomplete'),
+const autoCompleteConfig = {
   RenderOption: (movie) => 
   {
     const imgSrc = movie.Poster === 'N/A' ? '' : movie.Poster;
@@ -35,10 +33,6 @@ createAutoComplete({
   GetInputValue: (movie) =>
   {
     return movie.Title;
-  },
-  OnOptionSelect: (movie) => 
-  {
-    OnMovieSelect(movie);
   },
   Request: async (searchTerm) =>
   {
@@ -57,11 +51,33 @@ createAutoComplete({
       return [];
     }
     return response.data.Search;
-
+  }
+}
+createAutoComplete({
+  ...autoCompleteConfig,
+  searchingFor: 'movie',
+  root: document.querySelector('#left-autocomplete'),
+  OnOptionSelect: (movie) => 
+  {
+    document.querySelector('.tutorial').classList.add('is-hidden');
+    OnMovieSelect(movie, document.querySelector('#left-summary'), 'left');
   }
 });
 
-const OnMovieSelect = async movie =>
+createAutoComplete({
+  ...autoCompleteConfig,
+  searchingFor: 'movie',
+  root: document.querySelector('#right-autocomplete'),
+  OnOptionSelect: (movie) => 
+  {
+    document.querySelector('.tutorial').classList.add('is-hidden');
+    OnMovieSelect(movie, document.querySelector('#right-summary'), 'right');
+  }
+});
+
+let leftMovie;
+let rightMovie;
+const OnMovieSelect = async (movie, summaryTarget, side) =>
 {
   const config = 
     {
@@ -71,11 +87,67 @@ const OnMovieSelect = async movie =>
       }
     }
   let response = await axios.get('http://www.omdbapi.com/', config)
-  document.querySelector('#summary').innerHTML = movieTemplate(response.data);
-}
+  summaryTarget.innerHTML = movieTemplate(response.data);
+
+  if(side === 'left')
+  {
+    leftMovie = response.data;
+  }
+  else
+  {
+    rightMovie = response.data;
+  }
+
+  if(leftMovie && rightMovie)
+  {
+    runComparison();
+  }
+};
+
+const runComparison = () =>
+{
+  const leftSideStats = document.querySelectorAll('#left-summary .notification');
+  const rightSideStats = document.querySelectorAll('#right-summary .notification');
+
+  leftSideStats.forEach((leftStat, index) => 
+    {
+      const rightStat = rightSideStats[index];
+
+      const leftSideValue = leftStat.dataset.value;
+      const rightSideValue = rightStat.dataset.value;
+
+      if(rightSideValue > leftSideValue)
+      {
+	leftStat.classList.remove('is-primary');
+	leftStat.classList.add('is-warning');
+      }
+      else
+      {
+	rightStat.classList.remove('is-primary');
+	rightStat.classList.add('is-warning');
+      }
+    })
+};
 
 const movieTemplate = (movieDetail) =>
 {
+  const awards = movieDetail.Awards.split(' ').reduce((accumulator, word) => {
+    const value = parseInt(word);
+
+    if(isNaN(value))
+    {
+      return accumulator;
+    }
+    return accumulator + value;
+  }, 0)
+  console.log(awards);
+
+
+  const dollars = parseInt(movieDetail.BoxOffice.replace(/\$/g, '').replace(/,/g, ''));
+  const metaScore = parseInt(movieDetail.Metascore);
+  const imdbRating = parseFloat(movieDetail.imdbRating);
+  const imdbVotes = parseInt(movieDetail.imdbVotes.replace(/,/g, ''));
+
   const content = `
   <article class="media">
     <figure class="media-left">
@@ -91,23 +163,23 @@ const movieTemplate = (movieDetail) =>
       </div>
     </div>
   </article>
-  <article class="notification is-primary">
+  <article data-value=${awards} class="notification is-primary">
     <p class="title">${movieDetail.Awards}</p>
     <p class="subtitle">Awards</p>
   </article>
-  <article class="notification is-primary">
+  <article data-value=${dollars} class="notification is-primary">
     <p class="title">${movieDetail.BoxOffice}</p>
     <p class="subtitle">Box Office</p>
   </article>
-  <article class="notification is-primary">
+  <article data-value=${metaScore} class="notification is-primary">
     <p class="title">${movieDetail.Metascore}</p>
     <p class="subtitle">Metascore</p>
   </article>
-  <article class="notification is-primary">
+  <article data-value=${imdbRating} class="notification is-primary">
     <p class="title">${movieDetail.imdbRating}</p>
     <p class="subtitle">IDMB Rating</p>
   </article>
-  <article class="notification is-primary">
+  <article data-value=${imdbVotes} class="notification is-primary">
     <p class="title">${movieDetail.imdbVotes}</p>
     <p class="subtitle">IMDB Votes</p>
   </article>
